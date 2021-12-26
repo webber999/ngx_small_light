@@ -459,21 +459,14 @@ static ngx_int_t ngx_http_small_light_body_filter(ngx_http_request_t *r, ngx_cha
 static void *ngx_http_small_light_create_srv_conf(ngx_conf_t *cf)
 {
     ngx_http_small_light_conf_t *srv_conf;
-    ngx_pool_t *pool, *temp_pool;
     srv_conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_small_light_conf_t));
     if (srv_conf == NULL) {
         return NGX_CONF_ERROR;
     }
-    pool = ngx_create_pool(16384, cf->log);
-    if (pool == NULL) {
-        return NGX_CONF_ERROR;
-    }
-    temp_pool = ngx_create_pool(16384, cf->log);
-    if (temp_pool == NULL) {
-        return NGX_CONF_ERROR;
-    }
-    srv_conf->patterns.keys.pool = pool;
-    srv_conf->patterns.temp_pool = temp_pool;
+
+    srv_conf->patterns.pool = cf->pool;
+    srv_conf->patterns.temp_pool = cf->temp_pool;
+
     if (ngx_hash_keys_array_init(&srv_conf->patterns, NGX_HASH_SMALL) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
@@ -543,7 +536,7 @@ static char *ngx_http_small_light_pattern_define(ngx_conf_t *cf, ngx_command_t *
     ptn_name = &value[1];
     ptn_str  = &value[2];
     
-    rc  = ngx_hash_add_key(&srv_conf->patterns, ptn_name, ptn_str->data, NGX_HASH_READONLY_KEY);
+    rc = ngx_hash_add_key(&srv_conf->patterns, ptn_name, ptn_str->data, NGX_HASH_READONLY_KEY);
 
     if (rc != NGX_OK) {
         return NGX_CONF_ERROR;
@@ -554,7 +547,7 @@ static char *ngx_http_small_light_pattern_define(ngx_conf_t *cf, ngx_command_t *
     hash.max_size    = 128;
     hash.bucket_size = 128;
     hash.name        = "small_light_pattern_define";
-    hash.pool        = srv_conf->patterns.keys.pool;
+    hash.pool        = cf->pool;
     hash.temp_pool   = NULL;
 
     if (ngx_hash_init(&hash, srv_conf->patterns.keys.elts, srv_conf->patterns.keys.nelts) != NGX_OK) {
